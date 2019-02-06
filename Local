@@ -1,0 +1,108 @@
+import socket, pygame
+
+#Pygame
+pygame.init()
+size = (500, 300)
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption("Client")
+font = pygame.font.SysFont("OCR A Extended", 20, False, False)
+clock = pygame.time.Clock()
+
+#Presets
+end = False
+serverlink = ("", 65535)
+incoming = ""
+data = ["", ""]
+identify = [False, ""]
+outgoing = ["", ""]
+
+color = (255, 0, 0)
+
+#Local
+local = socket.socket()
+
+while serverlink[0] == "":
+    for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                end = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    serverlink = (outgoing[1], 65535)
+                    outgoing[1] = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    outgoing[1] = outgoing[1][:-1]
+                else:
+                    outgoing[1] = outgoing[1] + event.unicode
+                
+    #Graphics
+    screen.fill((70, 160, 250))
+    recieved = font.render(str(data[0] + " " + data[1]), False, (0, 0, 0))
+    screen.blit(recieved, [10, 10])
+    sending = font.render(outgoing[1], False, (0, 0, 0))
+    screen.blit(sending, [10, 250])
+
+    #End
+    pygame.display.flip()
+    clock.tick(60)
+
+while end == False:
+
+    #Connect
+    try:
+        local.settimeout(5.0)
+        local.connect(serverlink)
+        color = (25, 200, 0)
+    except socket.timeout:
+        pass
+    except socket.error:
+        pass
+
+    #Incoming
+    try:
+        local.settimeout(1.0)
+        if identify[0] == False:
+            identify[1] = local.recv(1024).decode()
+            outgoing[0] = identify[1]
+            identify[0] = True
+            outgoing[1] = "connected"
+            local.sendto(str(outgoing).encode(), serverlink)
+            outgoing[1] = ""
+        incoming = local.recv(1024).decode()
+        incoming = incoming.replace("[", "").replace("]", "").replace("\'", "")
+        data[0], data[1] = incoming.split(", ")
+    except socket.timeout:
+        pass
+    except socket.error:
+        pass
+
+    #Outgoing=
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            end = True
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                try:
+                    local.settimeout(1.0)
+                    local.sendto(str(outgoing).encode(), serverlink)
+                except socket.timeout:
+                    pass
+                outgoing[1] = ""
+            elif event.key == pygame.K_BACKSPACE:
+                outgoing[1] = outgoing[1][:-1]
+            else:
+                outgoing[1] = outgoing[1] + event.unicode
+
+    #Graphics
+    #screen.fill((70, 160, 250))
+    screen.fill(color)
+    recieved = font.render(str(data[0] + " " + data[1]), False, (0, 0, 0))
+    screen.blit(recieved, [10, 10])
+    sending = font.render(outgoing[1], False, (0, 0, 0))
+    screen.blit(sending, [10, 250])
+
+    #End
+    pygame.display.flip()
+    clock.tick(60)
+outgoing[1] = "disconnected"
+local.sendto(str(outgoing).encode(), serverlink)
+pygame.quit
