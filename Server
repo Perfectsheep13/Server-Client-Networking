@@ -1,9 +1,3 @@
-#Socket Networking
-#Max Pethel
-#2-2-19
-
-#cd C:\Users\maxwell.pethel\Downloads\Coding\Socket Networking\
-
 import socket, pygame
 
 #Pygame
