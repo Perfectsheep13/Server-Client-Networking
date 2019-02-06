@@ -1,0 +1,80 @@
+#Socket Networking
+#Max Pethel
+#2-2-19
+
+#cd C:\Users\maxwell.pethel\Downloads\Coding\Socket Networking\
+
+import socket, pygame
+
+#Pygame
+pygame.init()
+size = (500, 300)
+screen = pygame.display.set_mode(size)
+pygame.display.set_caption("Server")
+font = pygame.font.SysFont("OCR A Extended", 20, False, False)
+clock = pygame.time.Clock()
+
+#Presets
+end = False
+clients = []
+ports = []
+incoming = ""
+data = ["", ""]
+outgoing = ""
+
+#Server
+server = socket.socket()
+serverlink = (socket.gethostbyname(socket.gethostname()), 65535)
+server.bind(serverlink)
+server.listen(5)
+
+while end == False:
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            end = True
+
+    #Connecting Clients
+    try:
+        server.settimeout(1.0)
+        conn, conn_ip = server.accept()
+        if conn not in clients:
+            conn.setblocking(False)
+            clients.append(conn)
+            ports.append(str(conn_ip[1]))
+            clients[clients.index(conn)].sendto(str(conn_ip[1]).encode(), conn_ip)
+    except socket.timeout:
+        pass
+
+    #Client Group Info
+
+    #Splitting Incoming Data
+    try:
+        for client in clients:
+            try:
+                incoming = client.recv(1024).decode()
+                incoming = incoming.replace("[", "").replace("]", "").replace("\'", "")
+                data[0], data[1] = incoming.split(", ")
+                for port in ports:
+                    #if port != data[0]:
+                        #clients[ports.index(port)].sendto(str(data).encode(), (conn_ip[0], int(port)))
+                    clients[ports.index(port)].sendto(str(data).encode(), (conn_ip[0], int(port)))
+                if data[1] == "disconnected":
+                    clients.remove(clients[ports.index(data[0])])
+                    ports.remove(data[0])
+            except socket.error:
+                pass
+            except socket.timeout:
+                pass
+    except socket.error:
+        pass
+
+    #Graphics
+    screen.fill((200, 0, 0))
+    recieved = font.render(str(data[0] + " " + data[1]), False, (0, 0, 0))
+    screen.blit(recieved, [10, 10])
+
+    #End
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit
